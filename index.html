@@ -66,9 +66,9 @@
     margin-top: 6px;
   }
 
-  .controls { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; width: 100%; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; width: 100%; align-items: flex-end; }
   .select-wrap { display: flex; flex-direction: column; gap: 6px; position: relative; }
-  .select-wrap label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+  .select-wrap label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
   
   select, input[type="text"] {
     background: var(--surface);
@@ -77,16 +77,19 @@
     font-family: 'Outfit', sans-serif;
     font-size: 14px;
     font-weight: 500;
-    padding: 10px 16px;
+    padding: 10px 14px;
     border-radius: var(--radius);
     outline: none;
     transition: all 0.2s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     width: 100%;
   }
-  select { cursor: pointer; appearance: none; min-width: 140px; }
-  input[type="text"] { min-width: 240px; }
+  select { cursor: pointer; appearance: none; }
   
+  select:focus, input[type="text"]:focus { 
+    border-color: var(--accent); 
+    box-shadow: 0 0 0 3px rgba(44,76,59,0.1); 
+  }
+
   .autocomplete-list {
     position: absolute;
     top: calc(100% + 4px);
@@ -100,11 +103,7 @@
     box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     display: none;
   }
-  .autocomplete-item {
-    padding: 12px 16px;
-    cursor: pointer;
-    border-bottom: 1px solid var(--surface2);
-  }
+  .autocomplete-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--surface2); }
   .autocomplete-item:hover { background: var(--surface2); }
   .ac-name { font-weight: 600; font-size: 14px; }
   .ac-sub { font-size: 11px; color: var(--text-dim); }
@@ -113,18 +112,18 @@
     background: var(--accent);
     color: #ffffff;
     border: none;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 15px;
-    padding: 11px 26px;
+    padding: 11px 20px;
     border-radius: var(--radius);
     cursor: pointer;
     transition: all 0.2s;
-    white-space: nowrap;
     box-shadow: 0 4px 12px rgba(44,76,59,0.2);
   }
   .btn-run:hover { background: var(--accent2); transform: translateY(-1px); }
 
-  #status { font-size: 14px; font-weight: 500; color: var(--text-dim); padding: 8px 0 20px; }
+  #status { font-size: 14px; font-weight: 500; color: var(--text-dim); padding: 8px 0 20px; min-height: 40px; }
+  
   #weather-strip {
     display: none;
     background: var(--surface);
@@ -143,6 +142,17 @@
     color: var(--accent);
     margin-bottom: 16px;
     border-radius: 6px;
+  }
+  .warning-banner {
+    background: rgba(214,104,83,0.1);
+    border: 1px solid var(--warn);
+    color: var(--warn);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
   }
   .wx-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
   .wx-pill {
@@ -212,7 +222,7 @@
 
   @media (max-width:768px) {
     header { flex-direction:column; gap: 24px; }
-    .controls { flex-direction:column; align-items:stretch; }
+    .controls { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -221,25 +231,54 @@
   <header>
     <div class="logo-block">
       <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect width="44" height="44" rx="12" fill="#2c4c3b"/><path d="M22 12C22 12 14 18 14 26C14 31 18 34 22 34C26 34 30 31 30 26C30 18 22 12 22 12Z" fill="#8ba391"/><path d="M22 34V18" stroke="#2c4c3b" stroke-width="2" stroke-linecap="round"/></svg>
-      <div class="logo-text"><h1>Get into Gear</h1><p>CLO-based gear advisor</p></div>
+      <div class="logo-text"><h1>Get into Gear</h1><p>Thermal Running Advisor</p></div>
     </div>
     <div class="controls">
-      <div class="select-wrap"><label>Activity</label><select id="activity-select"><option value="8.5">Running</option></select></div>
-      <div class="select-wrap" style="flex: 1;"><label>Location</label><input type="text" id="location-input" placeholder="Search City or Zip" autocomplete="off"><div id="autocomplete-list" class="autocomplete-list"></div></div>
-      <div class="select-wrap"><label>Units</label><select id="units-select"><option value="imperial">°F / mph</option><option value="metric">°C / km/h</option></select></div>
-      <div class="select-wrap"><button class="btn-run" id="btn-run" onclick="runOracle()">Get My Kit</button></div>
+      <div class="select-wrap"><label>Intensity</label><select id="activity-select">
+        <option value="7.0">Recovery Run</option>
+        <option value="8.5" selected>Steady Running</option>
+        <option value="11.0">Tempo / Threshold</option>
+        <option value="13.5">Intervals</option>
+      </select></div>
+      
+      <div class="select-wrap"><label>Body Temp</label><select id="calibration-select">
+        <option value="0.05">Runs Cold (+CLO)</option>
+        <option value="0" selected>Normal</option>
+        <option value="-0.05">Runs Hot (-CLO)</option>
+      </select></div>
+
+      <div class="select-wrap"><label>Environment</label><select id="env-select">
+        <option value="city" selected>Open / City</option>
+        <option value="trail">Trail / Shade</option>
+      </select></div>
+      
+      <div class="select-wrap"><label>Location</label><input type="text" id="location-input" placeholder="Search City or Zip" autocomplete="off"><div id="autocomplete-list" class="autocomplete-list"></div></div>
+      
+      <div class="select-wrap"><label>Units</label><select id="units-select">
+        <option value="imperial">°F / mph</option>
+        <option value="metric">°C / km/h</option>
+      </select></div>
+
+      <button class="btn-run" id="btn-run" onclick="runOracle()">Get My Kit</button>
     </div>
   </header>
 
-  <div id="status">Enter a location or leave blank for GPS.</div>
-  <div id="weather-strip"><div id="wx-location" class="location-badge"></div><div class="wx-pills" id="wx-pills"></div><div class="wx-grid" id="wx-grid"></div></div>
-  <div class="section-label" id="outfit-label" style="display:none">Today's Recommended Kit</div>
+  <div id="status">Syncing settings...</div>
+  <div id="weather-strip">
+    <div id="wx-location" class="location-badge"></div>
+    <div id="wx-warning" class="warning-banner" style="display:none">⚠️ Post-run chill risk: Have a change of clothes or jacket ready.</div>
+    <div class="wx-pills" id="wx-pills"></div>
+    <div class="wx-grid" id="wx-grid"></div>
+  </div>
+  
+  <div class="section-label" id="outfit-label" style="display:none">Recommended Loadout</div>
   <div id="outfit-grid"></div>
   <div id="summary-bar"></div>
-  <footer>Weather · Open-Meteo API &nbsp;·&nbsp; CLO Layering Engine</footer>
+  <footer>Weather by Open-Meteo · CLO Layering Engine · Privacy First</footer>
 </div>
 
 <script>
+// ─── WARDROBE DATA ────────────────────────────────────────────────────────────
 const WARDROBE = {
   tops: [
     { name:"Cotton T-Shirt",                  clo:0.08, isBase:true,  isMid:false, cotton:true  },
@@ -270,50 +309,67 @@ const WARDROBE = {
 const $ = id => document.getElementById(id);
 const cToF = c => c * 9/5 + 32;
 
+// ─── PERSISTENCE & AUTOCOMPLETE ────────────────────────────────────────────────
 let selectedLoc = null;
 let acTimeout = null;
-const locInput = $('location-input');
-const acList = $('autocomplete-list');
 
-locInput.addEventListener('input', function() {
+window.onload = () => {
+    const saved = JSON.parse(localStorage.getItem('userSettings') || '{}');
+    if (saved.intensity) $('activity-select').value = saved.intensity;
+    if (saved.units) $('units-select').value = saved.units;
+    if (saved.calibration) $('calibration-select').value = saved.calibration;
+    if (saved.env) $('env-select').value = saved.env;
+    if (saved.location) {
+        selectedLoc = saved.location;
+        $('location-input').value = saved.location.name;
+    }
+    $('status').textContent = 'Ready to go.';
+};
+
+$('location-input').addEventListener('input', function() {
   clearTimeout(acTimeout);
   const val = this.value.trim();
-  selectedLoc = null;
-  if (!val) { acList.style.display = 'none'; return; }
+  if (!val) { $('autocomplete-list').style.display = 'none'; return; }
   acTimeout = setTimeout(async () => {
     try {
       const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=5&language=en&format=json`);
       const data = await res.json();
       if (data.results) {
-        acList.innerHTML = data.results.map(r => {
+        $('autocomplete-list').innerHTML = data.results.map(r => {
           const sub = [r.admin1, r.country].filter(Boolean).join(', ');
           return `<div class="autocomplete-item" onclick="selectLocation(${r.latitude}, ${r.longitude}, '${r.name.replace(/'/g, "\\'")}', '${sub.replace(/'/g, "\\'")}')">
             <div class="ac-name">${r.name}</div><div class="ac-sub">${sub}</div></div>`;
         }).join('');
-        acList.style.display = 'block';
+        $('autocomplete-list').style.display = 'block';
       }
-    } catch (e) { acList.style.display = 'none'; }
+    } catch (e) { $('autocomplete-list').style.display = 'none'; }
   }, 300);
 });
 
 function selectLocation(lat, lon, name, sub) {
-  const full = sub ? `${name}, ${sub}` : name;
-  selectedLoc = { lat, lon, name: full };
-  locInput.value = full;
-  acList.style.display = 'none';
+  selectedLoc = { lat, lon, name: sub ? `${name}, ${sub}` : name };
+  $('location-input').value = selectedLoc.name;
+  $('autocomplete-list').style.display = 'none';
 }
 
-document.addEventListener('click', e => { if (e.target !== locInput) acList.style.display = 'none'; });
-
+// ─── MAIN ORACLE LOGIC ────────────────────────────────────────────────────────
 async function runOracle() {
   const btn = $('btn-run');
   const status = $('status');
   btn.disabled = true;
-  ['weather-strip','outfit-grid','summary-bar','outfit-label'].forEach(id => $(id).style.display = 'none');
   status.className = 'loading pulsing';
 
+  // Save State
+  localStorage.setItem('userSettings', JSON.stringify({
+      intensity: $('activity-select').value,
+      units: $('units-select').value,
+      calibration: $('calibration-select').value,
+      env: $('env-select').value,
+      location: selectedLoc
+  }));
+
   let lat, lon, locName = "Your Location";
-  if (locInput.value.trim() && selectedLoc) {
+  if (selectedLoc) {
     lat = selectedLoc.lat; lon = selectedLoc.lon; locName = selectedLoc.name;
   } else {
     try {
@@ -326,6 +382,7 @@ async function runOracle() {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,wind_speed_10m,weather_code,is_day&wind_speed_unit=mph&temperature_unit=celsius&timezone=auto`;
     const wxData = await (await fetch(url)).json();
     const c = wxData.current;
+    
     const wx = {
       tempC: c.temperature_2m, rfC: c.apparent_temperature, hum: c.relative_humidity_2m,
       rain: c.precipitation > 0 || (c.weather_code >= 51), isDay: c.is_day === 1,
@@ -333,22 +390,30 @@ async function runOracle() {
       wind: c.wind_speed_10m, code: c.weather_code
     };
     
-    const result = runEngine(wx, 8.5);
+    const settings = {
+        met: parseFloat($('activity-select').value),
+        cal: parseFloat($('calibration-select').value),
+        env: $('env-select').value
+    };
+
+    const result = runEngine(wx, settings);
     renderWeather(wx, $('units-select').value);
     renderOutfit(result);
     renderSummary(result);
-    status.className = ''; status.textContent = 'Kit Ready.';
-  } catch(e) { status.className = 'error'; status.textContent = 'Weather Error.'; }
+    status.className = ''; status.textContent = 'Kit Optimized.';
+  } catch(e) { status.className = ''; status.textContent = 'Error loading weather.'; console.error(e); }
   btn.disabled = false;
 }
 
-function runEngine(wx, met) {
-  let targetClo = Math.max(0, (31 - wx.rfC) / (9 * met) - 0.15);
-  if (wx.rain) targetClo += 0.10;
-  if (wx.sun) targetClo -= 0.05;
+function runEngine(wx, set) {
+  // Target CLO Calculation
+  let targetClo = (31 - wx.rfC) / (9 * set.met) - 0.15;
+  targetClo = Math.max(0, targetClo + set.cal); // Manual Calibration
 
-  const reasons = {};
-  let tops = WARDROBE.tops.filter(t => wx.rain ? !t.cotton : true);
+  if (wx.rain) targetClo += 0.10;
+  if (wx.sun && set.env !== 'trail') targetClo -= 0.05; // Solar credit skipped on Trail
+
+  const tops = WARDROBE.tops.filter(t => wx.rain ? !t.cotton : true);
   let forceOuter = null;
   if (wx.rain) forceOuter = "Rain Jacket";
   else if (cToF(wx.tempC) < 40) forceOuter = "Windbreaker";
@@ -360,20 +425,19 @@ function runEngine(wx, met) {
   let selected = [];
   let bestDist = Infinity;
 
-  // Single layer check (must be base)
+  // Single layer check
   pool.filter(t => t.isBase).forEach(t => {
     let d = Math.abs((t.clo + outerClo) * 0.85 - targetClo);
     if (d < bestDist) { selected = [t]; bestDist = d; }
   });
 
-  // Dual layer check (Base + Mid OR Base + Base)
+  // Dual layer check
   pool.forEach(t1 => {
     pool.forEach(t2 => {
       if (t1 === t2) return;
       if ((t1.name === "Merino Wool Long Sleeve" && merinoConflicts.includes(t2.name)) || 
           (t2.name === "Merino Wool Long Sleeve" && merinoConflicts.includes(t1.name))) return;
       if ((t1.isMid || t2.isMid) && (!t1.isBase && !t2.isBase)) return;
-
       let d = Math.abs((t1.clo + t2.clo + outerClo) * 0.85 - targetClo);
       if (d < bestDist) { selected = [t1, t2]; bestDist = d; }
     });
@@ -397,14 +461,16 @@ function runEngine(wx, met) {
     head: wx.rain ? WARDROBE.accessories.find(a => a.key === "hat_brimmed") : (cToF(wx.tempC) < 40 ? WARDROBE.accessories.find(a => a.key === "hat_beanie") : WARDROBE.accessories.find(a => a.key === "hat_brimmed")),
     socks: (cToF(wx.tempC) < 35 || wx.rain) ? WARDROBE.accessories.find(a => a.key === "socks_thermal") : WARDROBE.accessories.find(a => a.key === "socks_normal"),
     extras: extras,
-    totalClo: (selected.reduce((a,b) => a + b.clo, 0) + outerClo) * 0.85
+    totalClo: (selected.reduce((a,b) => a + b.clo, 0) + outerClo) * 0.85,
+    tempC: wx.tempC
   };
 }
 
 function renderWeather(wx, u) {
   const isImp = u === 'imperial';
   $('wx-location').textContent = `📍 ${wx.locName}`;
-  $('wx-pills').innerHTML = `<span class="wx-pill">${wx.isDay ? '☀️' : '🌙'} Day</span>${wx.rain ? '<span class="wx-pill">🌧 Rain Active</span>' : ''}`;
+  $('wx-warning').style.display = cToF(wx.tempC) < 40 ? 'flex' : 'none';
+  $('wx-pills').innerHTML = `<span class="wx-pill">${wx.isDay ? '☀️' : '🌙'} Day</span>${wx.rain ? '<span class="wx-pill">🌧 Rain Active</span>' : ''}${wx.sun && $('env-select').value === 'city' ? '<span class="wx-pill">☀ Solar Credit Applied</span>' : ''}`;
   $('wx-grid').innerHTML = `
     <div class="wx-item"><div class="wx-lbl">Temp</div><div class="wx-val">${(isImp ? cToF(wx.tempC) : wx.tempC).toFixed(0)}°</div></div>
     <div class="wx-item"><div class="wx-lbl">Feels</div><div class="wx-val cold">${(isImp ? cToF(wx.rfC) : wx.rfC).toFixed(0)}°</div></div>
@@ -434,7 +500,8 @@ function renderOutfit(r) {
 
 function renderSummary(r) {
   const bar = $('summary-bar');
-  bar.innerHTML = `Achieved CLO: <span class="clo-big">${r.totalClo.toFixed(3)}</span> &nbsp;/&nbsp; Target: ${r.target.toFixed(3)}`;
+  const calibrationStr = parseFloat($('calibration-select').value) !== 0 ? ` (${$('calibration-select').options[$('calibration-select').selectedIndex].text})` : '';
+  bar.innerHTML = `Achieved CLO: <span class="clo-big">${r.totalClo.toFixed(3)}</span> &nbsp;/&nbsp; Target: ${r.target.toFixed(3)}${calibrationStr}`;
   bar.style.display = 'block'; setTimeout(() => bar.style.opacity = '1', 50);
 }
 </script>
