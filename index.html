@@ -66,7 +66,7 @@
     margin-top: 6px;
   }
 
-  .controls { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; width: 100%; align-items: flex-end; }
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; width: 100%; align-items: flex-end; }
   .select-wrap { display: flex; flex-direction: column; gap: 6px; position: relative; }
   .select-wrap label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
   
@@ -113,12 +113,17 @@
     color: #ffffff;
     border: none;
     font-weight: 700;
-    font-size: 15px;
-    padding: 11px 20px;
+    font-size: 16px;
+    padding: 14px 20px;
     border-radius: var(--radius);
     cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 4px 12px rgba(44,76,59,0.2);
+    grid-column: 1 / -1; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 8px;
   }
   .btn-run:hover { background: var(--accent2); transform: translateY(-1px); }
 
@@ -162,11 +167,15 @@
     font-weight: 600;
     border-radius: 20px;
   }
-  .wx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 20px; }
-  .wx-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); }
-  .wx-val { font-weight: 700; font-size: 28px; line-height: 1; }
+  .wx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px,1fr)); gap: 16px; }
+  .wx-item { display: flex; flex-direction: column; gap: 2px; }
+  .wx-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; }
+  .wx-val { font-weight: 700; font-size: 24px; line-height: 1.2; color: var(--text); }
   .wx-val.cold { color: var(--cold); }
   .wx-val.go   { color: var(--accent2); }
+  .wx-val.rain { color: var(--rain); }
+  .unit-small { font-size: 14px; font-weight: 600; margin-left: 2px; opacity: 0.8; }
+  .type-small { font-size: 11px; font-weight: 700; text-transform: uppercase; display: block; margin-top: -2px; }
 
   .section-label {
     font-size: 12px;
@@ -223,6 +232,7 @@
   @media (max-width:768px) {
     header { flex-direction:column; gap: 24px; }
     .controls { grid-template-columns: 1fr; }
+    .wx-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -252,13 +262,8 @@
         <option value="trail">Trail / Shade</option>
       </select></div>
       
-      <div class="select-wrap"><label>Location</label><input type="text" id="location-input" placeholder="Search City or Zip" autocomplete="off"><div id="autocomplete-list" class="autocomplete-list"></div></div>
+      <div class="select-wrap" style="flex: 1;"><label>Location</label><input type="text" id="location-input" placeholder="Search City or Zip" autocomplete="off"><div id="autocomplete-list" class="autocomplete-list"></div></div>
       
-      <div class="select-wrap"><label>Units</label><select id="units-select">
-        <option value="imperial">°F / mph</option>
-        <option value="metric">°C / km/h</option>
-      </select></div>
-
       <button class="btn-run" id="btn-run" onclick="runOracle()">Get My Kit</button>
     </div>
   </header>
@@ -281,42 +286,40 @@
 // ─── WARDROBE DATA ────────────────────────────────────────────────────────────
 const WARDROBE = {
   tops: [
-    { name:"Cotton T-Shirt",                  clo:0.08, isBase:true,  isMid:false, cotton:true  },
-    { name:"Performance T-Shirt",             clo:0.08, isBase:true,  isMid:false, cotton:false },
-    { name:"Cotton Long Sleeve",              clo:0.15, isBase:true,  isMid:false, cotton:true  },
-    { name:"Performance Long Sleeve",         clo:0.14, isBase:true,  isMid:false, cotton:false },
-    { name:"Merino Wool Long Sleeve",         clo:0.20, isBase:true,  isMid:false, cotton:false },
-    { name:"Light Performance Quarterzip",    clo:0.18, isBase:false, isMid:true,  cotton:false },
-    { name:"Synthetic Performance Quarterzip",clo:0.22, isBase:false, isMid:true,  cotton:false },
-    { name:"Cotton Sweatshirt",               clo:0.30, isBase:false, isMid:true,  cotton:true  },
-    { name:"Midweight Fleece",                clo:0.40, isBase:false, isMid:true,  cotton:false },
-    { name:"Windbreaker",                     clo:0.10, isBase:false, isMid:false, cotton:false, windBlock:true },
-    { name:"Rain Jacket",                     clo:0.12, isBase:false, isMid:false, cotton:false, windBlock:true, rainJacket:true },
-    { name:"Down Jacket",                     clo:1.20, isBase:false, isMid:false, cotton:false, windBlock:true }
+    { name:"Cotton T-Shirt",                  clo:0.08, isBase:true,  isMid:false, isLong:false, cotton:true  },
+    { name:"Performance T-Shirt",             clo:0.08, isBase:true,  isMid:false, isLong:false, cotton:false },
+    { name:"Cotton Long Sleeve",              clo:0.15, isBase:true,  isMid:false, isLong:true,  cotton:true  },
+    { name:"Performance Long Sleeve",         clo:0.14, isBase:true,  isMid:false, isLong:true,  cotton:false },
+    { name:"Merino Wool Long Sleeve",         clo:0.20, isBase:true,  isMid:false, isLong:true,  cotton:false },
+    { name:"Light Performance Quarterzip",    clo:0.18, isBase:false, isMid:true,  isLong:true,  cotton:false },
+    { name:"Synthetic Performance Quarterzip",clo:0.22, isBase:false, isMid:true,  isLong:true,  cotton:false },
+    { name:"Cotton Sweatshirt",               clo:0.30, isBase:false, isMid:true,  isLong:true,  cotton:true  },
+    { name:"Midweight Fleece",                clo:0.40, isBase:false, isMid:true,  isLong:true,  cotton:false },
+    { name:"Windbreaker",                     clo:0.10, isBase:false, isMid:false, isLong:true,  cotton:false, windBlock:true },
+    { name:"Rain Jacket",                     clo:0.12, isBase:false, isMid:false, isLong:true,  cotton:false, windBlock:true, rainJacket:true },
+    { name:"Down Jacket",                     clo:1.20, isBase:false, isMid:false, isLong:true,  cotton:false, windBlock:true }
   ],
   bottoms: [
     { name:"Short Shorts", clo:0.03 }, { name:"Standard Shorts", clo:0.06 },
     { name:"Tights", clo:0.15 }, { name:"Athletic Joggers", clo:0.20 }
   ],
   accessories: [
-    { name:"Hat (Brimmed)", clo:0.02, key:"hat_brimmed" }, { name:"Winter Hat (Beanie)", clo:0.15, key:"hat_beanie" },
-    { name:"Sunglasses", clo:0.00, key:"sunglasses" }, { name:"Sunscreen", clo:0.00, key:"sunscreen" },
-    { name:"Reflective Vest", clo:0.02, key:"reflective" }, { name:"Gloves", clo:0.05, key:"gloves" },
-    { name:"Normal Socks", clo:0.04, key:"socks_normal" }, { name:"Thermal Socks", clo:0.10, key:"socks_thermal" }
+    { name:"Hat (Brimmed)", clo:0.02, key:"hat_brimmed"  }, { name:"Winter Hat (Beanie)", clo:0.15, key:"hat_beanie"   },
+    { name:"Sunglasses",    clo:0.00, key:"sunglasses"   }, { name:"Sunscreen",           clo:0.00, key:"sunscreen"    },
+    { name:"Reflective Vest", clo:0.02, key:"reflective"   }, { name:"Gloves",              clo:0.05, key:"gloves"       },
+    { name:"Normal Socks",   clo:0.04, key:"socks_normal" }, { name:"Thermal Socks",        clo:0.10, key:"socks_thermal"}
   ]
 };
 
 const $ = id => document.getElementById(id);
 const cToF = c => c * 9/5 + 32;
 
-// ─── PERSISTENCE & AUTOCOMPLETE ────────────────────────────────────────────────
 let selectedLoc = null;
 let acTimeout = null;
 
 window.onload = () => {
     const saved = JSON.parse(localStorage.getItem('userSettings') || '{}');
     if (saved.intensity) $('activity-select').value = saved.intensity;
-    if (saved.units) $('units-select').value = saved.units;
     if (saved.calibration) $('calibration-select').value = saved.calibration;
     if (saved.env) $('env-select').value = saved.env;
     if (saved.location) {
@@ -352,17 +355,14 @@ function selectLocation(lat, lon, name, sub) {
   $('autocomplete-list').style.display = 'none';
 }
 
-// ─── MAIN ORACLE LOGIC ────────────────────────────────────────────────────────
 async function runOracle() {
   const btn = $('btn-run');
   const status = $('status');
   btn.disabled = true;
   status.className = 'loading pulsing';
 
-  // Save State
   localStorage.setItem('userSettings', JSON.stringify({
       intensity: $('activity-select').value,
-      units: $('units-select').value,
       calibration: $('calibration-select').value,
       env: $('env-select').value,
       location: selectedLoc
@@ -379,15 +379,20 @@ async function runOracle() {
   }
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,wind_speed_10m,weather_code,is_day&wind_speed_unit=mph&temperature_unit=celsius&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,is_day,wind_speed_10m&hourly=precipitation_probability&wind_speed_unit=mph&temperature_unit=celsius&timezone=auto&forecast_days=1`;
     const wxData = await (await fetch(url)).json();
     const c = wxData.current;
     
+    const now = new Date();
+    const currentHour = now.getHours();
+    const precipProb = wxData.hourly.precipitation_probability[currentHour];
+
     const wx = {
       tempC: c.temperature_2m, rfC: c.apparent_temperature, hum: c.relative_humidity_2m,
       rain: c.precipitation > 0 || (c.weather_code >= 51), isDay: c.is_day === 1,
       sun: c.is_day === 1 && [0,1,2].includes(c.weather_code), locName: locName,
-      wind: c.wind_speed_10m, code: c.weather_code
+      wind: c.wind_speed_10m, code: c.weather_code,
+      prob: precipProb
     };
     
     const settings = {
@@ -397,7 +402,7 @@ async function runOracle() {
     };
 
     const result = runEngine(wx, settings);
-    renderWeather(wx, $('units-select').value);
+    renderWeather(wx);
     renderOutfit(result);
     renderSummary(result);
     status.className = ''; status.textContent = 'Kit Optimized.';
@@ -406,26 +411,24 @@ async function runOracle() {
 }
 
 function runEngine(wx, set) {
-  // Target CLO Calculation
   let targetClo = (31 - wx.rfC) / (9 * set.met) - 0.15;
-  targetClo = Math.max(0, targetClo + set.cal); // Manual Calibration
+  targetClo = Math.max(0, targetClo + set.cal);
 
   if (wx.rain) targetClo += 0.10;
-  if (wx.sun && set.env !== 'trail') targetClo -= 0.05; // Solar credit skipped on Trail
+  if (wx.sun && set.env !== 'trail') targetClo -= 0.05;
 
-  const tops = WARDROBE.tops.filter(t => wx.rain ? !t.cotton : true);
+  const pool = WARDROBE.tops.filter(t => (wx.rain ? !t.cotton : true) && t.name !== "Rain Jacket" && t.name !== "Windbreaker");
   let forceOuter = null;
   if (wx.rain) forceOuter = "Rain Jacket";
   else if (cToF(wx.tempC) < 40) forceOuter = "Windbreaker";
 
   const outerClo = forceOuter ? WARDROBE.tops.find(t => t.name === forceOuter).clo : 0;
-  const pool = tops.filter(t => t.name !== "Rain Jacket" && t.name !== "Windbreaker");
   const merinoConflicts = ["Cotton T-Shirt", "Performance T-Shirt", "Cotton Long Sleeve", "Performance Long Sleeve", "Light Performance Quarterzip", "Synthetic Performance Quarterzip"];
 
   let selected = [];
   let bestDist = Infinity;
 
-  // Single layer check
+  // Single layer check (Must be base)
   pool.filter(t => t.isBase).forEach(t => {
     let d = Math.abs((t.clo + outerClo) * 0.85 - targetClo);
     if (d < bestDist) { selected = [t]; bestDist = d; }
@@ -435,9 +438,20 @@ function runEngine(wx, set) {
   pool.forEach(t1 => {
     pool.forEach(t2 => {
       if (t1 === t2) return;
+      
+      // BASE-TO-BASE CONFLICTS
+      if (t1.isBase && t2.isBase) {
+        if (t1.isLong && t2.isLong) return; // Cannot wear two long sleeves
+        if (!t1.isLong && !t2.isLong) return; // Cannot wear two T-shirts
+      }
+
+      // MERINO CONFLICTS
       if ((t1.name === "Merino Wool Long Sleeve" && merinoConflicts.includes(t2.name)) || 
           (t2.name === "Merino Wool Long Sleeve" && merinoConflicts.includes(t1.name))) return;
+
+      // MID-LAYER REQUIREMENT (Already established: Mid needs a Base)
       if ((t1.isMid || t2.isMid) && (!t1.isBase && !t2.isBase)) return;
+
       let d = Math.abs((t1.clo + t2.clo + outerClo) * 0.85 - targetClo);
       if (d < bestDist) { selected = [t1, t2]; bestDist = d; }
     });
@@ -461,21 +475,24 @@ function runEngine(wx, set) {
     head: wx.rain ? WARDROBE.accessories.find(a => a.key === "hat_brimmed") : (cToF(wx.tempC) < 40 ? WARDROBE.accessories.find(a => a.key === "hat_beanie") : WARDROBE.accessories.find(a => a.key === "hat_brimmed")),
     socks: (cToF(wx.tempC) < 35 || wx.rain) ? WARDROBE.accessories.find(a => a.key === "socks_thermal") : WARDROBE.accessories.find(a => a.key === "socks_normal"),
     extras: extras,
-    totalClo: (selected.reduce((a,b) => a + b.clo, 0) + outerClo) * 0.85,
-    tempC: wx.tempC
+    totalClo: (selected.reduce((a,b) => a + b.clo, 0) + outerClo) * 0.85
   };
 }
 
-function renderWeather(wx, u) {
-  const isImp = u === 'imperial';
+function renderWeather(wx) {
   $('wx-location').textContent = `📍 ${wx.locName}`;
   $('wx-warning').style.display = cToF(wx.tempC) < 40 ? 'flex' : 'none';
-  $('wx-pills').innerHTML = `<span class="wx-pill">${wx.isDay ? '☀️' : '🌙'} Day</span>${wx.rain ? '<span class="wx-pill">🌧 Rain Active</span>' : ''}${wx.sun && $('env-select').value === 'city' ? '<span class="wx-pill">☀ Solar Credit Applied</span>' : ''}`;
+  $('wx-pills').innerHTML = `<span class="wx-pill">${wx.isDay ? '☀️' : '🌙'} Day</span>${wx.rain ? '<span class="wx-pill">🌧 Rain Active</span>' : ''}`;
+  
+  const type = weatherDesc(wx.code);
+  const probDisplay = wx.prob < 25 ? 'None' : `${wx.prob}<span class="unit-small">%</span> <span class="type-small">${type}</span>`;
+
   $('wx-grid').innerHTML = `
-    <div class="wx-item"><div class="wx-lbl">Temp</div><div class="wx-val">${(isImp ? cToF(wx.tempC) : wx.tempC).toFixed(0)}°</div></div>
-    <div class="wx-item"><div class="wx-lbl">Feels</div><div class="wx-val cold">${(isImp ? cToF(wx.rfC) : wx.rfC).toFixed(0)}°</div></div>
-    <div class="wx-item"><div class="wx-lbl">Wind</div><div class="wx-val">${wx.wind.toFixed(0)}</div></div>
-    <div class="wx-item"><div class="wx-lbl">Humidity</div><div class="wx-val">${wx.hum}%</div></div>
+    <div class="wx-item"><div class="wx-lbl">Temp</div><div class="wx-val">${cToF(wx.tempC).toFixed(0)}<span class="unit-small">°F</span></div></div>
+    <div class="wx-item"><div class="wx-lbl">Feels</div><div class="wx-val cold">${cToF(wx.rfC).toFixed(0)}<span class="unit-small">°F</span></div></div>
+    <div class="wx-item"><div class="wx-lbl">Wind</div><div class="wx-val">${wx.wind.toFixed(0)}<span class="unit-small">mph</span></div></div>
+    <div class="wx-item"><div class="wx-lbl">Humidity</div><div class="wx-val">${wx.hum}<span class="unit-small">%</span></div></div>
+    <div class="wx-item"><div class="wx-lbl">Precip Chance</div><div class="wx-val ${wx.prob >= 25 ? 'rain' : 'go'}">${probDisplay}</div></div>
   `;
   $('weather-strip').style.display = 'block';
 }
@@ -488,21 +505,52 @@ function renderOutfit(r) {
       <div class="card-meta"><span class="card-cat">${type}</span>${forced ? '<span class="forced-badge">Required</span>' : ''}</div>
       <div class="card-name">${item.name}</div><div class="card-clo">${item.clo.toFixed(2)} CLO</div></div></div>`;
   };
-  if (r.outer) add('top', WARDROBE.tops.find(t => t.name === r.outer), true);
-  r.layers.forEach(l => add('top', l, false));
+
+  let topsToShow = [];
+  r.layers.forEach(l => topsToShow.push({ ...l, forced: false }));
+  if (r.outer) {
+    const outerItem = WARDROBE.tops.find(t => t.name === r.outer);
+    topsToShow.push({ ...outerItem, forced: true });
+  }
+
+  // UPDATED SORTING: Shell -> Mid -> Long Base -> Short Base
+  topsToShow.sort((a, b) => {
+    const getWeight = (t) => {
+      if (t.forced) return 0;
+      if (t.isMid) return 1;
+      if (t.isBase && t.isLong) return 2;
+      if (t.isBase && !t.isLong) return 3;
+      return 4;
+    };
+    return getWeight(a) - getWeight(b);
+  });
+
+  topsToShow.forEach(t => add('top', t, t.forced));
   r.bottoms.forEach(b => add('bottom', b, false));
   add('accessory', r.head, false);
   add('accessory', r.socks, false);
   r.extras.forEach(e => add('accessory', e, false));
+  
   grid.style.display = 'grid'; $('outfit-label').style.display = 'flex';
   setTimeout(() => grid.style.opacity = '1', 50);
 }
 
 function renderSummary(r) {
   const bar = $('summary-bar');
-  const calibrationStr = parseFloat($('calibration-select').value) !== 0 ? ` (${$('calibration-select').options[$('calibration-select').selectedIndex].text})` : '';
-  bar.innerHTML = `Achieved CLO: <span class="clo-big">${r.totalClo.toFixed(3)}</span> &nbsp;/&nbsp; Target: ${r.target.toFixed(3)}${calibrationStr}`;
+  bar.innerHTML = `Achieved CLO: <span class="clo-big">${r.totalClo.toFixed(3)}</span> &nbsp;/&nbsp; Target: ${r.target.toFixed(3)}`;
   bar.style.display = 'block'; setTimeout(() => bar.style.opacity = '1', 50);
+}
+
+function weatherDesc(code) {
+  if (code===0) return 'Clear';
+  if (code<=3) return 'Cloudy';
+  if (code<=49) return 'Fog';
+  if (code<=55) return 'Drizzle';
+  if (code<=65) return 'Rain';
+  if (code<=75) return 'Snow';
+  if (code<=82) return 'Showers';
+  if (code<=86) return 'Snow Showers';
+  return 'Storms';
 }
 </script>
 </body>
